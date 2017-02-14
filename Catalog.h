@@ -11,6 +11,7 @@
 using namespace std;
 
 
+
 class Catalog {
 private:
 	/* Data structures to keep catalog data in memory.
@@ -18,15 +19,22 @@ private:
 	 * Efficient data structures are recommended.
 	 * Avoid linear traversals when possible.
 	 */
-	//EfficientMap<string, Schema> tableNames;
-	//EfficientMap<string, Schema> attributes;
-	struct data{
-		string tabName;
-		int numTuples;
-		string fileLoc;
-		std::map <string, string> nameList;
-		string numDis;
+
+	struct tableStruct{
+			string tableName;
+			unsigned int numTuples;
+			string fileLoc;
+		};
+	struct attStruct{
+		int attid;
+		string attType;
+		string attName;
+		unsigned int numDist;
+		string tableName;
 	};
+	vector<attStruct> attv;
+	map<string, tableStruct> tableData;
+	map<string, vector<attStruct>> attributeData;
 
 
 public:
@@ -37,7 +45,7 @@ public:
 	 * Populate in-memory data structures with data from the SQLite database.
 	 * All the functions work with the in-memory data structures.
 	 */
-	static int callback(void *data, int argc, char **argv, char **azColName);
+	//int callback(void *data, int argc, char **argv, char **azColName);
 	Catalog(string& _fileName);
 
 	/* Catalog destructor.
