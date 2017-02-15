@@ -15,7 +15,7 @@ Catalog::Catalog(string& _fileName) {
 	sqlite3_stmt* stmt;
 	sqlite3_prepare_v2(db, "select * from tableNames", -1, &stmt, NULL);
 	tableStruct tables;
-	   int i = 4;
+	   int i = 3;
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
 		tables.tableName = (char*)sqlite3_column_text(stmt, i);
 		tables.numTuples = sqlite3_column_int(stmt, i+1);
@@ -46,11 +46,33 @@ Catalog::Catalog(string& _fileName) {
 }
 
 Catalog::~Catalog() {
+	Save();
+
 }
 
 bool Catalog::Save() {
+/*
+		// writing data into tableNames
+		sqlite3 *db;
+		sqlite3_stmt * stmt;
 
-	return true;
+		if (sqlite3_open("_filename", &db) == SQLITE_OK){
+			for(map<string, tableStruct>::iterator it = tableData.begin(); it != tableData.end(); it++){
+					string tableName = tableData.at(it->first).tableName;
+					unsigned int numTuples=tableData.at(it->first).numTuples;
+					string fileLoc=tableData.at(it->first).fileLoc;
+					//"('" + username + "','" + name + "','" + department + "','" + password + "');"
+					string sqlstatement = "INSERT INTO tableNames VALUES (" + 'tableName' + "," + numTuples + "," + 'fileLoc' + ");" ;
+					sqlite3_prepare_v2( db, sqlstatement.c_str(), -1, &stmt, NULL );//preparing the statement
+					sqlite3_step( stmt );//executing the statement
+			}
+		}
+	    else{
+	        return false;
+	    }
+	    sqlite3_finalize(stmt);
+	    sqlite3_close(db); */
+	    return true;
 }
 
 bool Catalog::GetNoTuples(string& _table, unsigned int& _noTuples) {
@@ -89,7 +111,7 @@ void Catalog::SetNoDistinct(string& _table, string& _attribute,
 }
 
 void Catalog::GetTables(vector<string>& _tables) {
-	for(map<string, tableStruct>::iterator it = tableData.begin(); it != tableData.end(); ++it)
+	for(map<string, tableStruct>::iterator it = tableData.begin(); it != tableData.end(); it++)
 	  _tables.push_back(it->first);
 }
 
@@ -97,16 +119,17 @@ bool Catalog::GetAttributes(string& _table, vector<string>& _attributes) {
 	//look for table name in the map return false for not found
 	if(tableData.find(_table)==tableData.end()) {return false;}
 
-	for(map<string, vector<attStruct>>::iterator it = attributeData.begin(); it != attributeData.end(); ++it){
+	for(map<string, vector<attStruct>>::iterator it = attributeData.begin(); it != attributeData.end(); it++){
 	_attributes.push_back(attributeData.at(_table).data()->attName);
 	}
 		return true;
 }
 
+//TODO verify if this actually prints all attributes
 bool Catalog::GetSchema(string& _table, Schema& _schema) {
 	if(tableData.find(_table)==tableData.end()) {return false;}
 	vector<string> _att; vector<string> _attTypes; vector<unsigned int> _dist ;
-	for(map<string, vector<attStruct>>::iterator it = attributeData.begin(); it != attributeData.end(); ++it){
+	for(map<string, vector<attStruct>>::iterator it = attributeData.begin(); it != attributeData.end(); it++){
 		_att.push_back(attributeData.at(_table).data()->attName);
 		_attTypes.push_back(attributeData.at(_table).data()->attType);
 		_dist.push_back(attributeData.at(_table).data()->numDist);
@@ -154,5 +177,15 @@ bool Catalog::DropTable(string& _table) {
 }
 
 ostream& operator<<(ostream& _os, Catalog& _c) {
+	for(auto it = _c.attributeData.begin(); it != _c.attributeData.end(); it++){
+		_os << _c.attributeData.at(it->first).data()->tableName  << " ( " ;
+		int j=0;
+			for(auto i=_c.attributeData.at(it->first).begin(); i!=_c.attributeData.at(it->first).end(); i++){
+					_os << _c.attributeData.at(it->first).at(j).attName << " ";
+					_os << _c.attributeData.at(it->first).at(j).attType << ", ";
+					j++;
+				}
+		_os << ")" ;
 	return _os;
+}
 }
