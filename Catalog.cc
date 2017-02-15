@@ -1,24 +1,33 @@
 #include <iostream>
 #include<sstream>
 #include "sqlite3.h"
+#include<cstring>
+#include<string>
 
 #include "Schema.h"
 #include "Catalog.h"
 
 using namespace std;
 
+
+
 Catalog::Catalog(string& _fileName) {
 	//get table metadata
 	sqlite3* db;
-	sqlite3_open("_fileName", &db);
+	ostringstream oss;
+	if(sqlite3_open(_fileName.c_str(), &db) != SQLITE_OK) {
+		cout << "not opening"; //just to check if anything goes wrong
+	}
 	sqlite3_stmt* stmt;
-	sqlite3_prepare_v2(db, "select * from tableNames", -1, &stmt, NULL);
+	sqlite3_prepare_v2(db, "select * from tableNames;", -1, &stmt, NULL);
 	tableStruct tables;
 	   int i = 3;
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
-		tables.tableName = (char*)sqlite3_column_text(stmt, i);
+		oss << sqlite3_column_text(stmt, i);
+		tables.tableName = oss.str(); oss.flush();
 		tables.numTuples = sqlite3_column_int(stmt, i+1);
-		tables.fileLoc = (char*)sqlite3_column_text(stmt, i+2);
+		oss << sqlite3_column_text(stmt, i+2);
+		tables.fileLoc = oss.str(); oss.flush();
 		tableData.insert(pair<string,tableStruct>(tables.tableName,tables));
 		i=i+3;
 		}
@@ -32,10 +41,13 @@ Catalog::Catalog(string& _fileName) {
 		while (sqlite3_step(stmt2) == SQLITE_ROW) {
 			attStruct atts;
 			atts.attid = sqlite3_column_int(stmt2, j);
-			atts.attType = (char*)sqlite3_column_text(stmt2, j+1);
-			atts.attName = (char*)sqlite3_column_text(stmt2, j+2);
-			atts.numDist = sqlite3_column_int(stmt2, j+3);
-			atts.tableName = (char*)sqlite3_column_text(stmt2, j+4);
+			 oss << sqlite3_column_text(stmt2, j+1);
+			 atts.attType = oss.str(); oss.flush();
+			 oss << sqlite3_column_text(stmt2, j+2);
+			 atts.attName = oss.str(); oss.flush();
+			 atts.numDist = sqlite3_column_int(stmt2, j+3);
+			oss << sqlite3_column_text(stmt2, j+4);
+			atts.tableName = oss.str(); oss.flush();
 			attv.push_back(atts);
 			attributeData.insert(pair<string,vector<attStruct>>(atts.tableName,attv));
 			j=j+5;
@@ -49,11 +61,12 @@ Catalog::~Catalog() {
 
 }
 
+//TODO what to do about deleted tables ? and open still an issue
 bool Catalog::Save() {
 		sqlite3 *db;
 		sqlite3_stmt *stmt, *stmt2;
-
-		if (sqlite3_open("_fileName", &db) == SQLITE_OK){
+		//const char* dbfile = _fileName.c_str();
+		if (sqlite3_open("somthing", &db) == SQLITE_OK){
 			//write into tableNames
 			for(map<string, tableStruct>::iterator it = tableData.begin(); it != tableData.end(); it++){
 					string tableName = tableData.at(it->first).tableName;
