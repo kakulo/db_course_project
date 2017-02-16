@@ -19,24 +19,6 @@ private:
 	 * Efficient data structures are recommended.
 	 * Avoid linear traversals when possible.
 	 */
-
-	struct tableStruct{
-			string tableName;
-			unsigned int numTuples;
-			string fileLoc;
-		};
-	struct attStruct{
-		int attid;
-		string attType;
-		string attName;
-		unsigned int numDist;
-		string tableName;
-	};
-	vector<attStruct> attv;
-	map<string, tableStruct> tableData;
-	map<string, vector<attStruct>> attributeData;
-
-
 public:
 	/* Catalog constructor.
 	 * Initialize the catalog with the persistent data stored in _fileName.
