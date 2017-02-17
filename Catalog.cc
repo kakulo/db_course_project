@@ -21,41 +21,12 @@ char * databasefile;
 sqlite3 *db;
 int rc;
 char * sql;
-struct TableEntry{
-	int num_tuples;
-	string path;
-	void TableEntryInit(int num_tuples, string path){
-		this->num_tuples = num_tuples;
-		this->path = path;
-	}
-
-	void setnotuples(int num_tuples){
- 		this->num_tuples = num_tuples;
-	}
-
- 	void setdatafile(string _path){
-		this->path = _path;
-	} 
-};
 
 ostream& operator<<(ostream& output,const TableEntry& now) {
 	output << now.num_tuples << ", " << now.path;
 	return output;
 }
 
-struct AttributeEntry{
-	string aname;
-	string atype;
-	int num_distinct;
-	void AttributeEntryInit(string aname, string atype, int num_distinct){
-		this->aname = aname;
-		this->atype = atype;
-		this->num_distinct = num_distinct;
-	}
-	void setnodistinct(int distinct){
-		this->num_distinct = distinct;
-	}
-};
 ostream& operator<<(ostream& output, const AttributeEntry& now){
 	output << now.aname << ", " << now.atype << ", " << now.num_distinct;
 	return output;
