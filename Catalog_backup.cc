@@ -28,14 +28,6 @@ struct TableEntry{
 		this->num_tuples = num_tuples;
 		this->path = path;
 	}
-
-	void setnotuples(int num_tuples){
- 		this->num_tuples = num_tuples;
-	}
-
- 	void setdatafile(string _path){
-		this->path = _path;
-	} 
 };
 
 ostream& operator<<(ostream& output,const TableEntry& now) {
@@ -51,9 +43,6 @@ struct AttributeEntry{
 		this->aname = aname;
 		this->atype = atype;
 		this->num_distinct = num_distinct;
-	}
-	void setnodistinct(int distinct){
-		this->num_distinct = distinct;
 	}
 };
 ostream& operator<<(ostream& output, const AttributeEntry& now){
@@ -140,7 +129,7 @@ Catalog::~Catalog() {
 	mmaster2.MoveToStart();
 	while(!mmaster2.AtEnd()){
 		tmp = mmaster2.CurrentKey();
-		sql = string("Insert Into master_table (tname, number_of_tuples, path) ") + "Values ('"+ tmp + "', " + to_string(mmaster2.CurrentData().getData().num_tuples) + ", '" + mmaster2.CurrentData().getData().path +"');";
+		sql = string("Insert Into master_table (tname, number_of_tuples, path) ") + "Values ('"+ tmp + "', " + to_string(mmaster2.CurrentData().test().num_tuples) + ", '" + mmaster2.CurrentData().test().path +"');";
 		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
 		sqlite3_step(stat);
 		mmaster2.Advance();
@@ -148,7 +137,7 @@ Catalog::~Catalog() {
 	mattribute.MoveToStart();
 	while(!mattribute.AtEnd()){
 		tmp = mattribute.CurrentKey();
-		sql = string("Insert Into master_attribute (tname, attribute_name, attribute_type, num_distinct) ") + "Values ('"+ tmp + "', '" + mattribute.CurrentData().getData().aname + "', '" + mattribute.CurrentData().getData().atype +"', " + to_string(mattribute.CurrentData().getData().num_distinct)+" );";
+		sql = string("Insert Into master_attribute (tname, attribute_name, attribute_type, num_distinct) ") + "Values ('"+ tmp + "', '" + mattribute.CurrentData().test().aname + "', '" + mattribute.CurrentData().test().atype +"', " + to_string(mattribute.CurrentData().test().num_distinct)+" );";
 		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
 		sqlite3_step(stat);
 		mattribute.Advance();
@@ -167,7 +156,7 @@ bool Catalog::Save() {
 	mmaster2.MoveToStart();
 	while(!mmaster2.AtEnd()){
 		tmp = mmaster2.CurrentKey();
-		sql = string("Insert Into master_table (tname, number_of_tuples, path) ") + "Values ('"+ tmp + "', " + to_string(mmaster2.CurrentData().getData().num_tuples) + ", '" + mmaster2.CurrentData().getData().path +"');";
+		sql = string("Insert Into master_table (tname, number_of_tuples, path) ") + "Values ('"+ tmp + "', " + to_string(mmaster2.CurrentData().test().num_tuples) + ", '" + mmaster2.CurrentData().test().path +"');";
 		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
 		sqlite3_step(stat);
 		mmaster2.Advance();
@@ -175,7 +164,7 @@ bool Catalog::Save() {
 	mattribute.MoveToStart();
 	while(!mattribute.AtEnd()){
 		tmp = mattribute.CurrentKey();
-		sql = string("Insert Into master_attribute (tname, attribute_name, attribute_type, num_distinct) ") + "Values ('"+ tmp + "', '" + mattribute.CurrentData().getData().aname + "', '" + mattribute.CurrentData().getData().atype +"', " + to_string(mattribute.CurrentData().getData().num_distinct)+" );";
+		sql = string("Insert Into master_attribute (tname, attribute_name, attribute_type, num_distinct) ") + "Values ('"+ tmp + "', '" + mattribute.CurrentData().test().aname + "', '" + mattribute.CurrentData().test().atype +"', " + to_string(mattribute.CurrentData().test().num_distinct)+" );";
 		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
 		sqlite3_step(stat);
 		mattribute.Advance();
@@ -186,7 +175,7 @@ bool Catalog::Save() {
 bool Catalog::GetNoTuples(string& _table, unsigned int& _noTuples) {
 		KeyString a(_table);
 		if(mmaster2.IsThere(a)){
-			_noTuples = mmaster2.Find(a).getData().num_tuples;
+			_noTuples = mmaster2.Find(a).test().num_tuples;
 			return true;
 		}else{
 			return false;
@@ -196,14 +185,14 @@ bool Catalog::GetNoTuples(string& _table, unsigned int& _noTuples) {
 void Catalog::SetNoTuples(string& _table, unsigned int& _noTuples) {
 	KeyString a(_table);
 	if(mmaster2.IsThere(a)){
-		 mmaster2.Find(a).getData().setnotuples(_noTuples);
+		 mmaster2.Find(a).setnotuples(_noTuples);
 	}
 }
 
 bool Catalog::GetDataFile(string& _table, string& _path) {
 	KeyString a(_table);
 	if(mmaster2.IsThere(a)){
-		 _path = mmaster2.Find(a).getData().path;
+		 _path = mmaster2.Find(a).test().path;
 		return true;
 	}else{
 		return false;
@@ -213,7 +202,7 @@ bool Catalog::GetDataFile(string& _table, string& _path) {
 void Catalog::SetDataFile(string& _table, string& _path) {
 	KeyString a(_table);
 	if(mmaster2.IsThere(a)){
-		 mmaster2.Find(a).getData().setdatafile(_path);// = _noTuples;
+		 mmaster2.Find(a).setdatafile(_path);// = _noTuples;
 	}
 }
 
@@ -222,18 +211,18 @@ bool Catalog::GetNoDistinct(string& _table, string& _attribute,
 	KeyString a(_table);
 	if(mmaster2.IsThere(a) && mattribute.IsThere(a)){
 		while(!mattribute.AtEnd()){
-			if(mattribute.CurrentData().getData().aname == _attribute){
+			if(mattribute.CurrentData().test().aname == _attribute){
 					break;
 			}
 			mattribute.Advance();
 		}
-		if(mattribute.CurrentData().getData().aname == _attribute){
-			_noDistinct = mattribute.CurrentData().getData().num_distinct;
+		if(mattribute.CurrentData().test().aname == _attribute){
+			_noDistinct = mattribute.CurrentData().test().num_distinct;
 			return true;
 		}else{
 			return false;
 		}
-		/*if(mattribute.AtEnd() && mattribute.CurrentData().getData().aname != _attribute){
+		/*if(mattribute.AtEnd() && mattribute.CurrentData().test().aname != _attribute){
 			return false;
 		}*/
 	}else{
@@ -247,7 +236,7 @@ void Catalog::SetNoDistinct(string& _table, string& _attribute,
 	if(mmaster2.IsThere(a)){
 		bool found = false;
 		while(!mattribute.AtEnd()){
-			if(mattribute.CurrentData().getData().aname == _attribute){
+			if(mattribute.CurrentData().test().aname == _attribute){
 					found = true;
 					break;
 			}
@@ -255,13 +244,13 @@ void Catalog::SetNoDistinct(string& _table, string& _attribute,
 		}
 		if(!found)
 			return;
-		if(mattribute.CurrentData().getData().aname == _attribute){
-			mattribute.CurrentData().getData().setnodistinct(_noDistinct);
+		if(mattribute.CurrentData().test().aname == _attribute){
+			mattribute.CurrentData().setnodistinct(_noDistinct);
 		}
-		/*if(mattribute.AtEnd() && mattribute.CurrentData().getData().aname != _attribute){
+		/*if(mattribute.AtEnd() && mattribute.CurrentData().test().aname != _attribute){
 			//cout << "Unsuccessful" <<endl;
 		}else{
-			mattribute.CurrentData().getData().setnodistinct(_noDistinct);
+			mattribute.CurrentData().setnodistinct(_noDistinct);
 		//cout << "Successful" <<endl;
 		}*/
 	}
@@ -280,7 +269,7 @@ bool Catalog::GetAttributes(string& _table, vector<string>& _attributes) {
 			mattribute.Advance();
 		}
 		while(!mattribute.AtEnd() && mattribute.CurrentKey().IsEqual(a)){
-			_attributes.push_back(mattribute.CurrentData().getData().aname);
+			_attributes.push_back(mattribute.CurrentData().test().aname);
 			mattribute.Advance();
 		}
 		return true;
@@ -299,9 +288,9 @@ bool Catalog::GetSchema(string& _table, Schema& _schema) {
 		vector<string> attributes, types;
 		vector<unsigned int> distincts;
 		while(!mattribute.AtEnd() && mattribute.CurrentKey().IsEqual(a)){
-			attributes.push_back(mattribute.CurrentData().getData().aname);
-			types.push_back(mattribute.CurrentData().getData().atype);
-			distincts.push_back(mattribute.CurrentData().getData().num_distinct);
+			attributes.push_back(mattribute.CurrentData().test().aname);
+			types.push_back(mattribute.CurrentData().test().atype);
+			distincts.push_back(mattribute.CurrentData().test().num_distinct);
 			mattribute.Advance();
 		}
 		Schema s(attributes, types, distincts);
@@ -332,7 +321,7 @@ bool Catalog::CreateTable(string& _table, vector<string>& _attributes,
 	mattribute.MoveToStart();
 	while(!mattribute.AtEnd()){
 		if(mattribute.CurrentKey().IsEqual(a)){
-			masteratt.push_back(mattribute.CurrentData().getData().aname);
+			masteratt.push_back(mattribute.CurrentData().test().aname);
 			size++;
 		}
 		mattribute.Advance();
