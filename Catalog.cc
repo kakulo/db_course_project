@@ -1,364 +1,254 @@
 #include <iostream>
-#include <set>
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include "sqlite3.h"
+#include <stdlib.h>
+#include <sqlite3.h>
+#include <cstring>
+#include <sstream>
+
 #include "Schema.h"
 #include "Catalog.h"
-#include "InefficientMap.h"
-#include "Keyify.h"
-#include "TwoWayList.h"
-#include "EfficientMap.h"
 
-#include "InefficientMap.cc"
-#include "Keyify.cc"
-#include "TwoWayList.cc"
-#include "EfficientMap.cc"
 using namespace std;
 
-char * databasefile;
-sqlite3 *db;
-int rc;
-char * sql;
-
-ostream& operator<<(ostream& output,const TableEntry& now) {
-	output << now.num_tuples << ", " << now.path;
-	return output;
-}
-
-ostream& operator<<(ostream& output, const AttributeEntry& now){
-	output << now.aname << ", " << now.atype << ", " << now.num_distinct;
-	return output;
-}
-InefficientMap <KeyString,Swapify<TableEntry> > mmaster2;
-EfficientMap <KeyString, Swapify<AttributeEntry> > mattribute;
-template<class Key, class Data>
-static void fill_table(sqlite3* db, char* sql, InefficientMap < Key,  Data>& table){
-	sqlite3_stmt *stat;
-	string name, tpath;
-	int tnumoftuples;
-	TableEntry te;
-	KeyString a;
-	if(sqlite3_prepare(db, sql, -1, &stat, 0) == SQLITE_OK){
-		//int ctotal = sqlite3_column_count(stat);
-		int res = 0;
-		while(1){
-			res = sqlite3_step(stat);
-			if(res == SQLITE_ROW){
-				name = (char*)sqlite3_column_text(stat, 0);
-				tnumoftuples = atoi((char*)sqlite3_column_text(stat, 1));
-				tpath = (char*)sqlite3_column_text(stat, 2);
-				te.TableEntryInit(tnumoftuples, tpath);
-				Swapify<TableEntry> tmp(te);
-				a = name;
-				table.Insert(a, tmp);
-			}else if(res == SQLITE_DONE){
-				break;
-			}
-		}
+static int callback(void *data, int argc, char **argv, char **azColName)
+{
+	vector<string>* temp = (vector<string>*) data;	
+	for(int i=0; i<argc; i++)
+	{
+		temp->push_back(azColName[i]);
+		temp->push_back(argv[i]);
 	}
+	return 0;
 }
-template<class Key, class Data>
-static void fill_attribute(sqlite3* db, char* sql, EfficientMap < Key,  Data>& table){
-	sqlite3_stmt *stat;
-	string name, aname, atype;
-	int num_distinct;
-	AttributeEntry te; 
-	KeyString a;
-	if(sqlite3_prepare(db, sql, -1, &stat, 0) == SQLITE_OK){
-		//int ctotal = sqlite3_column_count(stat);
-		int res = 0;
-		while(1){
-			res = sqlite3_step(stat);
-			if(res == SQLITE_ROW){
-				name= (char*)sqlite3_column_text(stat, 0);
-				aname = (char*)sqlite3_column_text(stat, 1);
-				atype = (char*)sqlite3_column_text(stat, 2);
-				num_distinct = atoi((char*)sqlite3_column_text(stat, 3));
-				te.AttributeEntryInit(aname, atype, num_distinct);
-				Swapify<AttributeEntry> tmp(te);
-				a = name;
-				table.Insert(a, tmp);
-			}else if(res == SQLITE_DONE){
-				break;
-			}
-		}
-	}
-}
+
+
 Catalog::Catalog(string& _fileName) {
-	 databasefile = new char[_fileName.length()+1];
-	 strcpy(databasefile, _fileName.c_str());
-	 rc = sqlite3_open(databasefile, &db);
-	if(rc){
-	 	exit(EXIT_FAILURE);
-	 }else{
-	 	char * sql = "Select * from tableNames";
-		fill_table(db, sql, mmaster2);
-	 	char * sql2 = "Select * from attributes";
-	 	fill_attribute(db, sql2, mattribute);
-	 }
+	
+	char *zErrMsg = 0;
+	char *sql = new char [_fileName.size()+1];
+	strcpy (sql, _fileName.c_str());
+
+	sqlite3_open(sql, &db);
+	
+	vector<string> SavedTables;
+	string sql1 = "SELECT * from ListOfTables;";
+	sql = new char [sql1.size()+1];
+	strcpy (sql, sql1.c_str());
+	sqlite3_exec(db, sql, callback, (void*)&SavedTables, &zErrMsg);
+	
+	for(int i =0;i < SavedTables.size()/6; i++)
+	{
+		vector<string> TableData;
+		
+		//6i+3 = no of tuples
+		tabList.name.push_back(SavedTables[i*6+ 1]);
+		tabList.noOfTup.push_back(atoi(SavedTables[i*6+ 3].c_str()));
+		tabList.path.push_back(SavedTables[i*6+ 5]);
+		
+		
+		sql1 = "SELECT * from " + SavedTables[6*i + 1];
+		sql = new char [sql1.size()+1];
+		strcpy (sql, sql1.c_str());
+		
+		sqlite3_exec(db, sql, callback, (void*)&TableData, &zErrMsg);
+		
+		vector<unsigned int> d;
+		vector<string> _attributes, _attributeTypes;
+
+		for (int j = 0; j < TableData.size()/6; j++)
+		{
+			d.push_back(atoi(TableData[j*6 + 5].c_str()));
+			_attributes.push_back(TableData[j*6 + 1]);
+			_attributeTypes.push_back(TableData[j*6 + 3]);	
+		}
+
+		Schema s(_attributes,_attributeTypes,d);
+		record[SavedTables[6*i + 1]] = s;	
+	}	
 }
 
 Catalog::~Catalog() {
-	string sql = "Delete from tableNames;", tmp;
-	sqlite3_stmt *stat;
-	sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-	sqlite3_step(stat);
-	sql = "Delete from attributes;";
-	sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-	sqlite3_step(stat);
-	mmaster2.MoveToStart();
-	while(!mmaster2.AtEnd()){
-		tmp = mmaster2.CurrentKey();
-		sql = string("Insert Into tableNames (name, numtuples, path) ") + "Values ('"+ tmp + "', " + to_string(mmaster2.CurrentData().getData().num_tuples) + ", '" + mmaster2.CurrentData().getData().path +"');";
-		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-		sqlite3_step(stat);
-		mmaster2.Advance();
-	}
-	mattribute.MoveToStart();
-	while(!mattribute.AtEnd()){
-		tmp = mattribute.CurrentKey();
-		sql = string("Insert Into attributes (name, attribute_name, attribute_type, num_distinct) ") + "Values ('"+ tmp + "', '" + mattribute.CurrentData().getData().aname + "', '" + mattribute.CurrentData().getData().atype +"', " + to_string(mattribute.CurrentData().getData().num_distinct)+" );";
-		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-		sqlite3_step(stat);
-		mattribute.Advance();
-	}
+	//Save();
 	sqlite3_close(db);
 }
 
 bool Catalog::Save() {
-	string sql = "Delete from tableNames;", tmp;
-	sqlite3_stmt *stat;
-	sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-	sqlite3_step(stat);
-	sql = "Delete from attributes;";
-	sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-	sqlite3_step(stat);
-	mmaster2.MoveToStart();
-	while(!mmaster2.AtEnd()){
-		tmp = mmaster2.CurrentKey();
-		sql = string("Insert Into tableNames (name, numtuples, path) ") + "Values ('"+ tmp + "', " + to_string(mmaster2.CurrentData().getData().num_tuples) + ", '" + mmaster2.CurrentData().getData().path +"');";
-		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-		sqlite3_step(stat);
-		mmaster2.Advance();
+	
+	char *zErrMsg = 0;
+	int  rc;	
+	string sql1;
+	char *sql = NULL;
+	
+	vector<string> tables;
+	GetTables(tables);
+	
+	sql1 = 	"CREATE TABLE ListOfTables( NAME STRING,NoOfTuples INTEGER, PATH STRING );"; 
+	
+	sql = new char [sql1.size()+1];
+	strcpy (sql, sql1.c_str());
+	sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+	
+	sql1 = "DELETE FROM ListOfTables";
+	sql = new char [sql1.size()+1];
+	strcpy (sql, sql1.c_str());
+	sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+	
+	for (int i = 0; i < tables.size(); i++)
+	{
+		string s;
+		stringstream out;
+		out << tabList.noOfTup[i];
+		s = out.str();
+		
+		sql1 = "INSERT INTO ListOfTables VALUES( '" + tables[i] + "','" + s + "','/127.0.0.1:27015' );"; 
+		
+		sql = new char [sql1.size()+1];
+		strcpy (sql, sql1.c_str());
+		sqlite3_exec(db, sql, 0, 0, &zErrMsg);
 	}
-	mattribute.MoveToStart();
-	while(!mattribute.AtEnd()){
-		tmp = mattribute.CurrentKey();
-		sql = string("Insert Into attributes (name, attribute_name, attribute_type, num_distinct) ") + "Values ('"+ tmp + "', '" + mattribute.CurrentData().getData().aname + "', '" + mattribute.CurrentData().getData().atype +"', " + to_string(mattribute.CurrentData().getData().num_distinct)+" );";
-		sqlite3_prepare(db, sql.c_str(), -1, &stat, 0);
-		sqlite3_step(stat);
-		mattribute.Advance();
+	
+	string _table;
+	vector<string> _attributes , _attributeTypes;
+		
+	for (std::map<string, Schema>::iterator it=record.begin(); it!=record.end(); ++it)
+	{	
+		vector<Attribute> atts;
+		Schema s;
+		_table = it->first;
+		s = it->second;
+		atts = s.GetAtts();
+		
+		int Size = s.GetNumAtts();
+		
+		sql1 = 	"CREATE TABLE " + _table + "( ATTS STRING, TYPE STRING, NoDistinct INTEGER );"; 
+		sql = new char [sql1.size()+1];
+		strcpy (sql, sql1.c_str());
+		sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+		
+		sql1 = "DELETE FROM " + _table;
+		sql = new char [sql1.size()+1];
+		strcpy (sql, sql1.c_str());
+		sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+		
+		for (int i = 0;i < Size; i++)
+		{
+			sql1 = 	"INSERT INTO " + _table + " VALUES('" + atts[i].name + "' ,'";
+			
+			switch(atts[i].type) {
+			case Integer:	sql1+= "INTEGER'";	break;
+			case Float:	sql1+= "FLOAT'";	break;
+			case String:	sql1+= "STRING'";	break;
+			default:	sql1+= "UNKNOWN";	break;
+			}
+			
+			string s;
+			stringstream out;
+			out << atts[i].noDistinct;
+			s = out.str();
+			sql1 = sql1 + "," + s + " );";
+			
+			sql = new char [sql1.size()+1];
+			strcpy (sql, sql1.c_str());
+			sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+			
+		}
 	}
-	return true;
+	
 }
 
 bool Catalog::GetNoTuples(string& _table, unsigned int& _noTuples) {
-		KeyString a(_table);
-		if(mmaster2.IsThere(a)){
-			_noTuples = mmaster2.Find(a).getData().num_tuples;
-			return true;
-		}else{
-			return false;
-		}
+
+	int i=-1;
+	while(1)
+	{
+		i++;
+		if (tabList.name[i] == _table) break;
+	}
+	_noTuples = tabList.noOfTup[i];
+	return true;
 }
 
 void Catalog::SetNoTuples(string& _table, unsigned int& _noTuples) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a)){
-		 mmaster2.Find(a).getData().setnotuples(_noTuples);
-	}
 }
 
 bool Catalog::GetDataFile(string& _table, string& _path) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a)){
-		 _path = mmaster2.Find(a).getData().path;
-		return true;
-	}else{
-		return false;
-	}
+	return true;
 }
 
 void Catalog::SetDataFile(string& _table, string& _path) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a)){
-		 mmaster2.Find(a).getData().setdatafile(_path);// = _noTuples;
-	}
 }
 
 bool Catalog::GetNoDistinct(string& _table, string& _attribute,
 	unsigned int& _noDistinct) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a) && mattribute.IsThere(a)){
-		while(!mattribute.AtEnd()){
-			if(mattribute.CurrentData().getData().aname == _attribute){
-					break;
-			}
-			mattribute.Advance();
-		}
-		if(mattribute.CurrentData().getData().aname == _attribute){
-			_noDistinct = mattribute.CurrentData().getData().num_distinct;
-			return true;
-		}else{
-			return false;
-		}
-		/*if(mattribute.AtEnd() && mattribute.CurrentData().getData().aname != _attribute){
-			return false;
-		}*/
-	}else{
-
-		return false;
-	}
+	return true;
 }
 void Catalog::SetNoDistinct(string& _table, string& _attribute,
 	unsigned int& _noDistinct) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a)){
-		bool found = false;
-		while(!mattribute.AtEnd()){
-			if(mattribute.CurrentData().getData().aname == _attribute){
-					found = true;
-					break;
-			}
-			mattribute.Advance();
-		}
-		if(!found)
-			return;
-		if(mattribute.CurrentData().getData().aname == _attribute){
-			mattribute.CurrentData().getData().setnodistinct(_noDistinct);
-		}
-		/*if(mattribute.AtEnd() && mattribute.CurrentData().getData().aname != _attribute){
-			//cout << "Unsuccessful" <<endl;
-		}else{
-			mattribute.CurrentData().getData().setnodistinct(_noDistinct);
-		//cout << "Successful" <<endl;
-		}*/
-	}
 }
 
 void Catalog::GetTables(vector<string>& _tables) {
-	for (mmaster2.MoveToStart(); !mmaster2.AtEnd(); mmaster2.Advance()) {
-		_tables.push_back(mmaster2.CurrentKey());
+	
+	for (std::map<string, Schema>::iterator it=record.begin(); it!=record.end(); ++it)
+	{
+		_tables.push_back(it->first);
 	}
 }
 
 bool Catalog::GetAttributes(string& _table, vector<string>& _attributes) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a) && mattribute.IsThere(a)){
-		while(!mattribute.CurrentKey().IsEqual(a)){
-			mattribute.Advance();
-		}
-		while(!mattribute.AtEnd() && mattribute.CurrentKey().IsEqual(a)){
-			_attributes.push_back(mattribute.CurrentData().getData().aname);
-			mattribute.Advance();
-		}
-		return true;
-	}else{
-
-		return false;
-	}
+	return true;
 }
 
 bool Catalog::GetSchema(string& _table, Schema& _schema) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a) && mattribute.IsThere(a)){
-		while(!mattribute.CurrentKey().IsEqual(a)){
-			mattribute.Advance();
-		}
-		vector<string> attributes, types;
-		vector<unsigned int> distincts;
-		while(!mattribute.AtEnd() && mattribute.CurrentKey().IsEqual(a)){
-			attributes.push_back(mattribute.CurrentData().getData().aname);
-			types.push_back(mattribute.CurrentData().getData().atype);
-			distincts.push_back(mattribute.CurrentData().getData().num_distinct);
-			mattribute.Advance();
-		}
-		Schema s(attributes, types, distincts);
-		_schema = s;
-		return true;
-	}else{
 
-		return false;
-	}
+	_schema = record[_table];
+	return true;
 }
-template <class T>
-bool is_unique(vector<T> X){
-	set<T> Y(X.begin(), X.end());
-	return X.size() == Y.size();
-}
+
 bool Catalog::CreateTable(string& _table, vector<string>& _attributes,
-	vector<string>& _attributeTypes) {
-	KeyString a(_table);
-	for (mmaster2.MoveToStart(); !mmaster2.AtEnd(); mmaster2.Advance()) {
-		if(mmaster2.CurrentKey().IsEqual(a)){
-			return false;
-		}
-	}
-	//if(!is_unique(_attributes))
-	int size = 1;
-	vector<string> masteratt;
-	mattribute.MoveToStart();
-	while(!mattribute.AtEnd()){
-		if(mattribute.CurrentKey().IsEqual(a)){
-			masteratt.push_back(mattribute.CurrentData().getData().aname);
-			size++;
-		}
-		mattribute.Advance();
-	}
-	int i;
-	for(i = 0; i < _attributes.size(); i++){
-		masteratt.push_back(_attributes[i]);
-	}
-	if(!is_unique(masteratt)){
-		return false;
-	}
-	string tmpp;
-	AttributeEntry te;	
-	for (i = 0; i<_attributeTypes.size(); i++){
-		tmpp = _attributeTypes[i];
-		if(tmpp == "INTEGER" || tmpp == "FLOAT" || tmpp == "STRING"){
-			te.AttributeEntryInit(_attributes[i], tmpp, 0);
-			Swapify<AttributeEntry> tmp(te);
-			KeyString c(_table);
-			mattribute.Insert(c, tmp);
-		}else{
-			return false;
-		}
-	}
-	TableEntry te1;
-	te1.TableEntryInit(0, "");
-	Swapify<TableEntry> tmp(te1);
-	KeyString b(_table);
-	mmaster2.Insert(b, tmp);
+	vector<string>& _attributeTypes) {	
+	
+	vector<unsigned int> d;
+		
+	for (int i = 0; i < _attributes.size(); i++)
+		d.push_back(0);
+	
+	Schema s(_attributes,_attributeTypes,d);
+	record[_table] = s;
+	
 	return true;
 }
 
 bool Catalog::DropTable(string& _table) {
-	KeyString a(_table);
-	if(mmaster2.IsThere(a)){
-		mmaster2.Remove(a, a, mmaster2.Find(a));
-		mattribute.MoveToStart();
-			int size = 1;
-			while(!mattribute.AtEnd()){
-				if(mattribute.CurrentKey().IsEqual(a)){
-					size++;
-				}
-				mattribute.Advance();
-			}
-			while(size>1){
-				mattribute.Remove(a, a, mattribute.Find(a));
-				size--;
-			}
-		return true;
+	
+	char *zErrMsg = 0;
+	int  rc;
+	char *sql = NULL;
+	
+	string sql1;
+	sql1 = 	"DROP TABLE " + _table;
+	sql = new char [sql1.size()+1];
+	strcpy (sql, sql1.c_str());
+
+	rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+
+	if( rc != SQLITE_OK ){
+		fprintf(stderr, "SQL error: %s\n", zErrMsg);
+		sqlite3_free(zErrMsg);
 	}else{
-		return false;
+		fprintf(stdout, "Table dropped successfully\n");
 	}
+	record.erase(_table);
+	
+	return true;
 }
 
 ostream& operator<<(ostream& _os, Catalog& _c) {
-
-	 return _os << mmaster2 <<endl << mattribute;
-
+	
+	for (std::map<string, Schema>::iterator it=_c.record.begin(); it!=_c.record.end(); ++it)
+	{
+		cout<<"Table Name: "<<it->first;
+		Schema s = it->second;
+		cout<<s<<endl;	
+	}
+	return _os;
 }

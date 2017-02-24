@@ -86,6 +86,7 @@ public:
 
 	// operator for printing
 	friend ostream& operator<<(ostream& _os, Schema& _c);
+
 };
 
 #endif //_SCHEMA

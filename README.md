@@ -1,2 +1,2 @@
-# db_course_project
-three members: Abhy, Martin, Anzheng
+# db277
+meant only for the course 277 - 

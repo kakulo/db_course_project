@@ -7,47 +7,29 @@
 #include <map>
 
 #include "Schema.h"
+#include <sqlite3.h>
 
 using namespace std;
 
-struct TableEntry{
-	int num_tuples;
-	string path;
-	void TableEntryInit(int num_tuples, string path){
-		this->num_tuples = num_tuples;
-		this->path = path;
-	}
-
-	void setnotuples(int num_tuples){
- 		this->num_tuples = num_tuples;
-	}
-
- 	void setdatafile(string _path){
-		this->path = _path;
-	} 
-};
-
-struct AttributeEntry{
-	string aname;
-	string atype;
-	int num_distinct;
-	void AttributeEntryInit(string aname, string atype, int num_distinct){
-		this->aname = aname;
-		this->atype = atype;
-		this->num_distinct = num_distinct;
-	}
-	void setnodistinct(int distinct){
-		this->num_distinct = distinct;
-	}
-};
 
 class Catalog {
 private:
+	sqlite3 *db;
+	map <string, Schema> record;
+	
+	struct tableListRecord{
+		vector<string> name;
+		vector<unsigned int> noOfTup;
+		vector<string> path;
+	};
+	tableListRecord tabList;
+	
 	/* Data structures to keep catalog data in memory.
 	 * A series of data structures you may find useful are included.
 	 * Efficient data structures are recommended.
 	 * Avoid linear traversals when possible.
 	 */
+
 public:
 	/* Catalog constructor.
 	 * Initialize the catalog with the persistent data stored in _fileName.
@@ -56,7 +38,6 @@ public:
 	 * Populate in-memory data structures with data from the SQLite database.
 	 * All the functions work with the in-memory data structures.
 	 */
-	//int callback(void *data, int argc, char **argv, char **azColName);
 	Catalog(string& _fileName);
 
 	/* Catalog destructor.

@@ -53,6 +53,7 @@ Schema::Schema(const Schema& _other) {
 Schema& Schema::operator=(const Schema& _other) {
 	// handle self-assignment first
 	if (this == &_other) return *this;
+	atts.clear();
 
 	for (int i = 0; i < _other.atts.size(); i++) {
 		Attribute a; a = _other.atts[i];
