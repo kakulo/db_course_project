@@ -38,7 +38,35 @@ Select::~Select() {
 }
 
 ostream& Select::print(ostream& _os) {
-	return _os << "(SELECT <- " << *producer << ")";
+	//return _os << "(SELECT <- " << *producer << ")";
+	for (int i = 0; i < predicate.numAnds; i++) {
+			if (i == 0) _os << "("; else _os << " (";
+			Comparison c = predicate.andList[i];
+			vector<Attribute> attList = schema.GetAtts();
+			if (c.operand1 == Left){
+				int pos = c.whichAtt1;
+				_os << attList.at(pos);
+			}
+			if (c.op == LessThan) _os << " < ";
+				else if (c.op == GreaterThan) _os << " > ";
+				else _os << " = ";
+
+			if (c.operand2 == Left){
+				int pos = c.whichAtt2;
+				_os << attList.at(pos);
+			}
+			else if (c.operand2 == Literal){
+
+			}
+
+			if (i < predicate.numAnds-1) _os << ") AND";
+			else _os << ")";
+		}
+
+		_os << "]";
+
+		return _os;
+
 }
 
 
@@ -80,7 +108,7 @@ Join::~Join() {
 }
 
 ostream& Join::print(ostream& _os) {
-	return _os << "JOIN (" << *left << " & " << *right << ")";
+	return _os << "JOIN (" << *left << " & " << *right <<  ")";
 }
 
 
@@ -156,7 +184,6 @@ ostream& WriteOut::print(ostream& _os) {
 
 
 ostream& operator<<(ostream& _os, QueryExecutionTree& _op) {
-	_os << "QUERY EXECUTION TREE\n"	<< *_op.root ;
-
-	return _os;
+	if (_op.root != NULL)
+	return _os << "QUERY EXECUTION TREE\n"	<< *_op.root ;
 }

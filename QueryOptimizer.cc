@@ -58,7 +58,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	cout<<endl;
 	cout<<"\n==============\nPREPROCESSING:\n==============\n";
 	cout<<"\n\t=====================\n\tSize\tCost\tOrder\n\t=====================\n";
-	cout<<"\nMap fillled for individual tables:\n---------------------\n";
+	cout<<"\nMap filled for individual tables:\n---------------------\n";
 
 	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
 	{
@@ -129,7 +129,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	
 	}
 
-	cout<<"\nMap fillled after push down selections:\n---------------------\n";
+	cout<<"\nMap filled after push down selections:\n---------------------\n";
 
 	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
 	{
@@ -223,7 +223,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 		tables = tables->next;
 	}
 
-	cout<<"\nMap fillled after pairing:\n---------------------\n";
+	cout<<"\nMap filled after pairing:\n---------------------\n";
 	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
 	{
 		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
@@ -235,7 +235,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 
 	Partition(tabList, _predicate);
 
-	cout<<"\nMap fillled after all permutations:\n---------------------\n";
+	cout<<"\nMap filled after all permutations:\n---------------------\n";
 	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
 	{
 		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
@@ -247,13 +247,18 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	_root -> rightChild = NULL;
 	for (int i = 0; i < tabList.size(); i++) 
 	{
-		_root -> tables.push_back(mapping[ {tabList[i]} ] );
+		stringstream ss; string temp;
+		ss << tabList[i]; ss >> temp;
+		_root -> tables.push_back(mapping[temp]);
+		ss.clear();
+
 	}
 
 	cout<<endl<<endl;
 	_root -> noTuples = Map[tabList].size;
 	tabList = Map[tabList].order;
 	treeGenerator(tabList, _root);
+	//treeDisp(_root);
 
 }
 
@@ -262,13 +267,13 @@ void QueryOptimizer::treeDisp(OptimizationTree* & root)
 {
 	if (root -> leftChild == NULL && root -> rightChild == NULL) 
 	{
-		cout<<root -> tables[0]<<endl;
-		cout<<root -> noTuples<<endl;		
+		cout<<root->tables[0]<<endl;
+		cout<<root->noTuples<<endl;
 		cout<<endl;
 		return;
 	}
-	treeDisp(root -> leftChild);
-	treeDisp(root -> rightChild);
+	treeDisp(root->leftChild);
+	treeDisp(root->rightChild);
 }
 	
 
@@ -290,9 +295,12 @@ void QueryOptimizer::treeGenerator(string tabList, OptimizationTree* & root)
 		
 	}
 		
-	for (int i=0; i<tabList.size(); i++)
-		root -> tables.push_back(mapping[ {tabList[i]} ]);
-	
+	for (int i=0; i<tabList.size(); i++){
+		stringstream ss; string temp;
+				ss << tabList[i]; ss >> temp;
+				root->tables.push_back(mapping[temp]);
+				ss.clear();
+	}
 	if (tabList.size() == 1)
 	{
 		root -> noTuples = Map[tabList].size;
@@ -305,13 +313,18 @@ void QueryOptimizer::treeGenerator(string tabList, OptimizationTree* & root)
 	root -> leftChild -> leftChild = NULL;
 	root -> leftChild -> rightChild = NULL;
 	root -> leftChild -> tables.push_back(root -> tables[0]);
-	root -> leftChild -> noTuples = Map[{tabList[0]}].size;
-	
+	stringstream ss1; string temp1;
+	ss1 << tabList[0]; ss1 >> temp1;
+	root -> leftChild -> noTuples = Map[temp1].size;
+	ss1.clear();
 	root -> rightChild = new OptimizationTree;
 	root -> rightChild -> leftChild = NULL;
 	root -> rightChild -> rightChild = NULL;
 	root -> rightChild -> tables.push_back(root -> tables[1]);
-	root -> rightChild -> noTuples = Map[{tabList[1]}].size;
+	stringstream ss2; string temp2;
+	ss2 << tabList[0]; ss2 >> temp2;
+	root -> rightChild -> noTuples = Map[temp2].size;
+	ss2.clear();
 
 }
 
@@ -430,7 +443,7 @@ bool QueryOptimizer::permutation(string& array)
 void QueryOptimizer::returnOrder(vector<string>& tables)
 {
 	string s = "";
-	for (int i=0; i<mapping.size(); i++)	s += to_string(i);
+	for (int i=0; i<mapping.size(); i++) s += to_string(i);
 	
 	s = Map[s].order;
 	
@@ -438,7 +451,14 @@ void QueryOptimizer::returnOrder(vector<string>& tables)
 	
 	for (int i=0; i < s.size(); i++)
 	{
-		if (s[i] != ',') tables.push_back(mapping[{s[i]}]);
+		if (s[i] != ','){
+			stringstream ss; string temp;
+			ss << s[i]; ss >> temp;
+			tables.push_back(mapping[temp]);
+			ss.clear();
+		}
+
+			//tables.push_back(mapping[{s[i]}]);
 		else tables.push_back(",");
 	}
 }

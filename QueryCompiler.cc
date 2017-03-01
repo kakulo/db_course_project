@@ -146,10 +146,10 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 
 				switch(type) 
 				{
-					case Integer:	attributeTypes.push_back("INTEGER");	break;
+					case Integer: attributeTypes.push_back("INTEGER");	break;
 					case Float:	attributeTypes.push_back("FLOAT");	break;
-					case String:	attributeTypes.push_back("STRING");	break;
-					default:	attributeTypes.push_back("UNKNOWN");	break;
+					case String: attributeTypes.push_back("STRING");	break;
+					default: attributeTypes.push_back("UNKNOWN");	break;
 				}
 				
 				distincts.push_back(schIn_.GetDistincts(str));
@@ -173,7 +173,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 	Schema finalSchema;
 	join->returnSchema(finalSchema);
 	string outFile = "Output_File.txt";
-	WriteOut * writeout = new WriteOut(finalSchema, outFile, join);
+	WriteOut* writeout = new WriteOut(finalSchema, outFile, join);
 	join = (RelationalOp*) writeout;
 
 	// Connecting everything in the query execution tree
@@ -188,11 +188,11 @@ RelationalOp* QueryCompiler::constTree(OptimizationTree* root, AndList* _predica
 {
 	if (root -> leftChild == NULL && root -> rightChild == NULL)
 	{	
-		cout<<"\nOnly one table\n\n";
+		cout<<"\nQuery has only one table\n\n";
 		RelationalOp* op;
 		auto it = selectz.find(root -> tables[0]);
-		if(it != selectz.end())		op = (RelationalOp*) & it->second;
-		else				op = (RelationalOp*) & scanz.at(it->first);
+		if(it != selectz.end())	op = (RelationalOp*) & it->second;
+		else op = (RelationalOp*) & scanz.at(it->first);
 
 		return op;
 	}
@@ -204,15 +204,15 @@ RelationalOp* QueryCompiler::constTree(OptimizationTree* root, AndList* _predica
 
 		CNF cnf;
 		Schema sch1, sch2;
-		RelationalOp* lop, *rop;
+		RelationalOp *lop, *rop;
 
 		auto it = selectz.find(left);
-		if(it != selectz.end())		lop = (RelationalOp*) & it->second;
-		else				lop = (RelationalOp*) & scanz.at(left);
+		if(it != selectz.end())	lop = (RelationalOp*) & it->second;
+		else lop = (RelationalOp*) & scanz.at(left);
 
 		it = selectz.find(right);
-		if(it != selectz.end()) 	rop = (RelationalOp*) & it->second;
-		else				rop = (RelationalOp*) & scanz.at(right);
+		if(it != selectz.end()) rop = (RelationalOp*) & it->second;
+		else rop = (RelationalOp*) & scanz.at(right);
 	
 		lop->returnSchema(sch1);
 		rop->returnSchema(sch2);
@@ -233,8 +233,8 @@ RelationalOp* QueryCompiler::constTree(OptimizationTree* root, AndList* _predica
 		RelationalOp* lop;
 
 		auto it = selectz.find(left);
-		if(it != selectz.end())		lop = (RelationalOp*) & it->second;
-		else				lop = (RelationalOp*) & scanz.at(left);
+		if(it != selectz.end())	lop = (RelationalOp*) & it->second;
+		else lop = (RelationalOp*) & scanz.at(left);
 
 		lop->returnSchema(sch1);
 		RelationalOp* rop = constTree(root -> rightChild, _predicate);
@@ -255,8 +255,8 @@ RelationalOp* QueryCompiler::constTree(OptimizationTree* root, AndList* _predica
 		RelationalOp* rop;
 
 		auto it = selectz.find(right);
-		if(it != selectz.end())		rop = (RelationalOp*) & it->second;
-		else				rop = (RelationalOp*) & scanz.at(right);
+		if(it != selectz.end()) rop = (RelationalOp*) & it->second;
+		else rop = (RelationalOp*) & scanz.at(right);
 
 		rop->returnSchema(sch2);
 		RelationalOp* lop = constTree(root -> leftChild, _predicate);
@@ -271,16 +271,16 @@ RelationalOp* QueryCompiler::constTree(OptimizationTree* root, AndList* _predica
 
 	Schema sch1,sch2;
 	CNF cnf;
-	RelationalOp* lop = constTree(root -> leftChild, _predicate);
-	RelationalOp* rop = constTree(root -> rightChild, _predicate);
+	RelationalOp *lopp = constTree(root->leftChild, _predicate);
+	RelationalOp *ropp = constTree(root->rightChild, _predicate);
 
-	lop->returnSchema(sch1);
-	rop->returnSchema(sch2);
+	lopp->returnSchema(sch1);
+	ropp->returnSchema(sch2);
 
 	cnf.ExtractCNF (*_predicate, sch1, sch2);
 	Schema schout = sch1;
 	schout.Append(sch2);
-	Join* join = new Join(sch1, sch2, schout, cnf, lop , rop);
+	Join* join = new Join(sch1, sch2, schout, cnf, lopp , ropp);
 	return ((RelationalOp*) join);
 
 }
