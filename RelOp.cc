@@ -45,7 +45,7 @@ ostream& Select::print(ostream& _os) {
 			vector<Attribute> attList = schema.GetAtts();
 			if (c.operand1 == Left){
 				int pos = c.whichAtt1;
-				_os << attList.at(pos);
+				_os << attList[pos].name;
 			}
 			if (c.op == LessThan) _os << " < ";
 				else if (c.op == GreaterThan) _os << " > ";
@@ -53,7 +53,7 @@ ostream& Select::print(ostream& _os) {
 
 			if (c.operand2 == Left){
 				int pos = c.whichAtt2;
-				_os << attList.at(pos);
+				_os << attList[pos].name;
 			}
 			else if (c.operand2 == Literal){
 
