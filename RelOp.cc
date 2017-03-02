@@ -19,7 +19,8 @@ Scan::~Scan() {
 }
 
 ostream& Scan::print(ostream& _os) {
-	return _os << "SCAN";
+	return _os << "  <<--< SCAN" ;
+
 }
 
 
@@ -39,31 +40,59 @@ Select::~Select() {
 
 ostream& Select::print(ostream& _os) {
 	//return _os << "(SELECT <- " << *producer << ")";
+	_os << "(SELECT | " ;
+
 	for (int i = 0; i < predicate.numAnds; i++) {
 			if (i == 0) _os << "("; else _os << " (";
 			Comparison c = predicate.andList[i];
 			vector<Attribute> attList = schema.GetAtts();
+			//first operand
+
 			if (c.operand1 == Left){
 				int pos = c.whichAtt1;
 				_os << attList[pos].name;
 			}
+			else if (c.operand1 == Literal)
+				if(c.attType==Integer){
+					int *tempInt = (int *)constants.GetColumn(c.whichAtt1);
+					_os << *tempInt;
+				}
+				else if(c.attType==Float){
+					float *tempDouble = (float *)constants.GetColumn(c.whichAtt1);
+					_os << *tempDouble;
+				}
+				else if(c.attType==String){
+					_os << (char *)constants.GetColumn(c.whichAtt1);
+				}
+
+			//cop
 			if (c.op == LessThan) _os << " < ";
 				else if (c.op == GreaterThan) _os << " > ";
 				else _os << " = ";
 
-			if (c.operand2 == Left){
+			//second operand
+			if (c.operand2 == Right){
 				int pos = c.whichAtt2;
 				_os << attList[pos].name;
 			}
-			else if (c.operand2 == Literal){
-
-			}
+			else if (c.operand2 == Literal)
+				if(c.attType==Integer){
+					int *tempInt = (int *)constants.GetColumn(c.whichAtt2);
+					_os << *tempInt;
+				}
+				else if(c.attType==Float){
+					float *tempDouble = (float *)constants.GetColumn(c.whichAtt2);
+					_os << *tempDouble;
+				}
+				else if(c.attType==String){
+					_os << (char *)constants.GetColumn(c.whichAtt2);
+				}
 
 			if (i < predicate.numAnds-1) _os << ") AND";
 			else _os << ")";
 		}
 
-		_os << "]";
+		_os  << " |" << *producer;
 
 		return _os;
 
@@ -87,7 +116,7 @@ Project::~Project() {
 }
 
 ostream& Project::print(ostream& _os) {
-	return _os << "PROJECT (" << *producer << ")";
+	return _os << "PROJECT {" <<  schemaOut << "} "  << *producer  ;
 }
 
 
@@ -108,7 +137,41 @@ Join::~Join() {
 }
 
 ostream& Join::print(ostream& _os) {
-	return _os << "JOIN (" << *left << " & " << *right <<  ")";
+	//return _os << "JOIN (" << *left << " & " << *right <<  ")";
+	_os << "JOIN " ;
+	for (int i = 0; i < predicate.numAnds; i++) {
+			if (i == 0) _os << "("; else _os << " (";
+
+			// print the comparison
+			Comparison c = predicate.andList[i];
+			vector<Attribute> attListLeft = schemaLeft.GetAtts();
+			vector<Attribute> attListRight = schemaRight.GetAtts();
+			if (c.operand1 == Left){
+				int pos = c.whichAtt1;
+				_os << attListLeft[pos].name;
+			}
+			else if (c.operand1 == Right) {
+				int pos = c.whichAtt1;
+				_os << attListRight[pos].name;;
+			}
+
+			if (c.op == LessThan) _os << " < ";
+			else if (c.op == GreaterThan) _os << " > ";
+			else _os << " = ";
+
+			if (c.operand2 == Left){
+				int pos = c.whichAtt2;
+				_os << attListLeft[pos].name;
+			}
+			else if (c.operand2 == Right) {
+				int pos = c.whichAtt2;
+				_os << attListRight[pos].name;;
+			}
+
+			if (i < predicate.numAnds-1) _os << ") AND"; else _os << ")";
+		}
+	_os  << " < "<< *left << " + " << *right << " > "  ;
+	return _os;
 }
 
 
@@ -143,7 +206,8 @@ Sum::~Sum() {
 }
 
 ostream& Sum::print(ostream& _os) {
-	return _os << "SUM (" << *producer << ")";
+
+			return _os << "SUM() <<--< " << *producer;
 }
 
 
@@ -163,7 +227,13 @@ GroupBy::~GroupBy() {
 }
 
 ostream& GroupBy::print(ostream& _os) {
-	return _os << "GROUP BY (" << *producer << ")";
+	//return _os << "GROUP BY (" << *producer << ")";
+	_os << "GROUP BY (";
+			int pos = groupingAtts.whichAtts[0];
+			vector<Attribute> attList = schemaIn.GetAtts();
+		_os << attList[pos].name;
+		_os << ") " << *producer;
+	return _os;
 }
 
 
@@ -179,11 +249,11 @@ WriteOut::~WriteOut() {
 }
 
 ostream& WriteOut::print(ostream& _os) {
-	return _os << "OUTPUT:\n{\n\t" << *producer <<"\n}\n";
+	return _os << endl << endl << endl << *producer << endl;
 }
 
 
 ostream& operator<<(ostream& _os, QueryExecutionTree& _op) {
 	if (_op.root != NULL)
-	return _os << "QUERY EXECUTION TREE\n"	<< *_op.root ;
+	return _os << "QUERY EXECUTION TREE" << *_op.root ;
 }

@@ -53,7 +53,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 
 	}
 
-	cout<<"\nTables encoding:\n\n";
+	/*cout<<"\nTables encoding:\n\n";
 	for (int i=0; i<tablez.size(); i++) cout<<tablez[i]<<"\t"<<tablezNames[i]<<endl;
 	cout<<endl;
 	cout<<"\n==============\nPREPROCESSING:\n==============\n";
@@ -66,7 +66,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	}
 
 	cout<<"---------------------\n";
-
+	*/
 	CNF cnf;
 	tables = _tables;
 	
@@ -129,14 +129,14 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	
 	}
 
-	cout<<"\nMap filled after push down selections:\n---------------------\n";
+	/*cout<<"\nMap filled after push down selections:\n---------------------\n";
 
 	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
 	{
 		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
 	}
 	cout<<"---------------------\n";
-
+	*/
 	tables = _tables;
 	int start = 0;
 
@@ -223,25 +223,25 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 		tables = tables->next;
 	}
 
-	cout<<"\nMap filled after pairing:\n---------------------\n";
+	/*cout<<"\nMap filled after pairing:\n---------------------\n";
 	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
 	{
 		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
 	}
 	cout<<"---------------------\n";
-
+	*/
 	string tabList = "";
 	for (int i=0 ; i<Origtablez.size(); i++) tabList+= Origtablez[i];
 
 	Partition(tabList, _predicate);
-
+	/*
 	cout<<"\nMap filled after all permutations:\n---------------------\n";
 	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
 	{
 		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
 	}
 	cout<<"---------------------\n";
-
+	*/
 	_root = new OptimizationTree;
 	_root -> leftChild = NULL;
 	_root -> rightChild = NULL;

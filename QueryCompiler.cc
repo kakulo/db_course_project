@@ -135,6 +135,7 @@ void QueryCompiler::Compile(TableList* _tables, NameList* _attsToSelect,
 			attributeTypes.push_back("FLOAT");
 			distincts.push_back(1);
 
+
 			while (grouping != NULL)
 			{
 				string str(grouping->name);
@@ -188,7 +189,7 @@ RelationalOp* QueryCompiler::constTree(OptimizationTree* root, AndList* _predica
 {
 	if (root -> leftChild == NULL && root -> rightChild == NULL)
 	{	
-		cout<<"\nQuery has only one table\n\n";
+
 		RelationalOp* op;
 		auto it = selectz.find(root -> tables[0]);
 		if(it != selectz.end())	op = (RelationalOp*) & it->second;
