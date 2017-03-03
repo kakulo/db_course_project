@@ -53,20 +53,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 
 	}
 
-	/*cout<<"\nTables encoding:\n\n";
-	for (int i=0; i<tablez.size(); i++) cout<<tablez[i]<<"\t"<<tablezNames[i]<<endl;
-	cout<<endl;
-	cout<<"\n==============\nPREPROCESSING:\n==============\n";
-	cout<<"\n\t=====================\n\tSize\tCost\tOrder\n\t=====================\n";
-	cout<<"\nMap filled for individual tables:\n---------------------\n";
 
-	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
-	{
-		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
-	}
-
-	cout<<"---------------------\n";
-	*/
 	CNF cnf;
 	tables = _tables;
 	
@@ -129,14 +116,6 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	
 	}
 
-	/*cout<<"\nMap filled after push down selections:\n---------------------\n";
-
-	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
-	{
-		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
-	}
-	cout<<"---------------------\n";
-	*/
 	tables = _tables;
 	int start = 0;
 
@@ -223,25 +202,12 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 		tables = tables->next;
 	}
 
-	/*cout<<"\nMap filled after pairing:\n---------------------\n";
-	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
-	{
-		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
-	}
-	cout<<"---------------------\n";
-	*/
+
 	string tabList = "";
 	for (int i=0 ; i<Origtablez.size(); i++) tabList+= Origtablez[i];
 
 	Partition(tabList, _predicate);
-	/*
-	cout<<"\nMap filled after all permutations:\n---------------------\n";
-	for (std::map<string, plan>::iterator it=Map.begin(); it!=Map.end(); ++it)
-	{
-		cout<<it->first<<"\t"<<it->second.size<<"\t"<<it->second.cost<<"\t"<<it->second.order<<endl;
-	}
-	cout<<"---------------------\n";
-	*/
+
 	_root = new OptimizationTree;
 	_root -> leftChild = NULL;
 	_root -> rightChild = NULL;
@@ -258,7 +224,7 @@ void QueryOptimizer::Optimize(TableList* _tables, AndList* _predicate,
 	_root -> noTuples = Map[tabList].size;
 	tabList = Map[tabList].order;
 	treeGenerator(tabList, _root);
-	//treeDisp(_root);
+
 
 }
 
@@ -401,7 +367,6 @@ void QueryOptimizer::Partition(string tables, AndList* _predicate)
 				if (cnf.numAnds == 0)	div = 1;
 
 				size = Map[left].size*Map[right].size/div;
-				//order = "(" + Map[left].order + "," + Map[right].order + ")";
 				order = Map[left].order + "," + Map[right].order;
 				min_cost = cost;
 
@@ -458,7 +423,6 @@ void QueryOptimizer::returnOrder(vector<string>& tables)
 			ss.clear();
 		}
 
-			//tables.push_back(mapping[{s[i]}]);
 		else tables.push_back(",");
 	}
 }

@@ -19,7 +19,7 @@ Scan::~Scan() {
 }
 
 ostream& Scan::print(ostream& _os) {
-	return _os << "  <<--< SCAN" ;
+	return _os << endl << "  "<< "SCAN" ;
 
 }
 
@@ -39,8 +39,7 @@ Select::~Select() {
 }
 
 ostream& Select::print(ostream& _os) {
-	//return _os << "(SELECT <- " << *producer << ")";
-	_os << "(SELECT | " ;
+	_os <<  endl << "  " << "SELECT ( " ;
 
 	for (int i = 0; i < predicate.numAnds; i++) {
 			if (i == 0) _os << "("; else _os << " (";
@@ -92,7 +91,7 @@ ostream& Select::print(ostream& _os) {
 			else _os << ")";
 		}
 
-		_os  << " |" << *producer;
+		_os  << " )" << *producer;
 
 		return _os;
 
@@ -116,7 +115,13 @@ Project::~Project() {
 }
 
 ostream& Project::print(ostream& _os) {
-	return _os << "PROJECT {" <<  schemaOut << "} "  << *producer  ;
+	vector<Attribute> names = schemaOut.GetAtts();
+	_os << "PROJECT {" ;
+	for(int i=0;i<names.size();++i) {
+		_os << names.at(i).name;
+	}
+	_os << "} " << *producer  ;
+	return _os;
 }
 
 
@@ -137,12 +142,11 @@ Join::~Join() {
 }
 
 ostream& Join::print(ostream& _os) {
-	//return _os << "JOIN (" << *left << " & " << *right <<  ")";
-	_os << "JOIN " ;
+	_os << endl<< "  "<<"JOIN " ;
 	for (int i = 0; i < predicate.numAnds; i++) {
 			if (i == 0) _os << "("; else _os << " (";
 
-			// print the comparison
+
 			Comparison c = predicate.andList[i];
 			vector<Attribute> attListLeft = schemaLeft.GetAtts();
 			vector<Attribute> attListRight = schemaRight.GetAtts();
@@ -170,7 +174,7 @@ ostream& Join::print(ostream& _os) {
 
 			if (i < predicate.numAnds-1) _os << ") AND"; else _os << ")";
 		}
-	_os  << " < "<< *left << " + " << *right << " > "  ;
+	_os << endl << "  "<< "< "<<*left << endl << "  " << " + " << *right  << endl << "  " << " >";
 	return _os;
 }
 
@@ -187,7 +191,7 @@ DuplicateRemoval::~DuplicateRemoval() {
 }
 
 ostream& DuplicateRemoval::print(ostream& _os) {
-	return _os << "DISTINCT (" << *producer << ")";
+	return _os << endl << "  "<<"DISTINCT"<<  *producer ;
 }
 
 
@@ -207,7 +211,7 @@ Sum::~Sum() {
 
 ostream& Sum::print(ostream& _os) {
 
-			return _os << "SUM() <<--< " << *producer;
+			return _os << endl << "  "<<"SUM() "  << *producer;
 }
 
 
@@ -228,7 +232,7 @@ GroupBy::~GroupBy() {
 
 ostream& GroupBy::print(ostream& _os) {
 	//return _os << "GROUP BY (" << *producer << ")";
-	_os << "GROUP BY (";
+	_os << endl << "  "<<"GROUP BY (";
 			int pos = groupingAtts.whichAtts[0];
 			vector<Attribute> attList = schemaIn.GetAtts();
 		_os << attList[pos].name;
